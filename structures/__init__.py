@@ -1,0 +1,1 @@
+from .minialign import MiniAlignDecoder
