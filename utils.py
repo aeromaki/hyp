@@ -1,0 +1,1 @@
+save_path = lambda x: f"checkpoint-{x}.tar"

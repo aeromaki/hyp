@@ -1,7 +1,6 @@
 import torch
 
 EPS = 1e-06
-INF = 1e+32
 
 def pseudo_polar(x: torch.Tensor) -> (torch.Tensor, torch.Tensor):
     return (x / (r := x.norm(dim=-1, keepdim=True) + EPS), r)

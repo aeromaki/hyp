@@ -1,1 +1,1 @@
-from .minialign import MiniAlignDecoder
+from .modules import *
