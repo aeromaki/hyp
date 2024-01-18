@@ -1,6 +1,6 @@
 import torch
 from torch import nn, Tensor
-from typing import Optional, Union
+from typing import Optional
 
 from .functions import *
 
@@ -44,11 +44,13 @@ class HyperbolicAttention(nn.Module):
         alpha = self.alignment(q, k)
         alpha = torch.exp(alpha)
         if mask_k is not None:
-            alpha = alpha * mask_k.unsqueeze(-2)
+            alpha = alpha.clone()
+            alpha[mask_k.unsqueeze(-2).unsqueeze(-1).repeat(1, 1, alpha.shape[2], 1, 1)] = -1000
         if mask_tgt is not None:
-            alpha[mask_tgt] = -1000
+            alpha = alpha.clone()
+            alpha[:, :, mask_tgt] = -1000
 
-        att = einstein_midpoint(alpha, v_k)
+        att = einstein_midpoint(alpha.squeeze(), v_k)
         if mask_q is not None:
             att = att * mask_q.unsqueeze(-1)
 
@@ -62,6 +64,7 @@ class AttentionProjector(nn.Module):
         d_proj: int,
         n_head: int
     ) -> None:
+        super().__init__()
         self.proj = nn.Linear(d_model, d_proj*n_head)
         self.d_proj = d_proj
         self.n_head = n_head
@@ -105,9 +108,10 @@ class HyperbolicMHA(nn.Module):
 
         att = self.attention(q_mh, k_mh, v_mh, mask_q_mh, mask_k_mh, mask_tgt)
         res = self._reshape_v(att)
+        res = self.Wo(res)
         return res
 
-    def _generate_mask(self, mask: Union[NoneType, Tensor]) -> Tensor:
+    def _generate_mask(self, mask: Optional[Tensor] = None) -> Tensor:
         if mask is not None:
             batch_ones = [1] * len(mask.shape[:-1])
             mask_mh = mask.unsqueeze(1).repeat(*batch_ones, self.n_head, 1)
@@ -128,8 +132,11 @@ class HyperbolicDecoderLayer(nn.Module):
         d_v: int,
         n_head: int
     ) -> None:
-        self.mha = HyperbolicMHA(d_model, d_k, d_v, n_head)
-        self.layernorm = nn.LayerNorm()
+        super().__init__()
+        self.att_self = HyperbolicMHA(d_model, d_k, d_v, n_head)
+        self.att_cross = HyperbolicMHA(d_model, d_k, d_v, n_head)
+        self.linear = nn.Linear(d_model, d_model)
+        self.layernorm = nn.LayerNorm(d_model)
 
     def forward(
         self,
@@ -139,8 +146,15 @@ class HyperbolicDecoderLayer(nn.Module):
         mask_k: Optional[Tensor] = None,
         mask_tgt: Optional[Tensor] = None
     ) -> Tensor:
-        res = self.mha(q, k, k, mask_q, mask_k, mask_tgt)
-        res = self.layernorm(src + res)
+        h_self = self.att_self(q, q, q, mask_q, mask_q, mask_tgt)
+        res_self = self.layernorm(q + h_self).relu()
+
+        h_cross = self.att_cross(res_self, k, k, mask_q, mask_k)
+        res_cross = self.layernorm(res_self + h_cross).relu()
+
+        h_linear = self.linear(res_cross)
+        res = self.layernorm(res_cross + h_linear).relu()
+
         return res
 
 
@@ -153,19 +167,20 @@ class HyperbolicDecoder(nn.Module):
         n_head: int,
         n_layer: int
     ) -> None:
+        super().__init__()
         self.layers = nn.ModuleList([
             HyperbolicDecoderLayer(d_model, d_k, d_v, n_head) for _ in range(n_layer)
         ])
 
     def forward(
         self,
-        src: Tensor,
-        tgt: Tensor,
+        q: Tensor,
+        k: Tensor,
         mask_q: Optional[Tensor] = None,
         mask_k: Optional[Tensor] = None,
         mask_tgt: Optional[Tensor] = None
     ) -> Tensor:
-        h = src
+        h = q
         for layer in self.layers:
-            h = layer(h, tgt, mask_q, mask_k, mask_tgt)
+            h = layer(h, k, mask_q, mask_k, mask_tgt)
         return h
