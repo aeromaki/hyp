@@ -1,7 +1,7 @@
 from enum import Enum
 
-from dataset_info import DatasetInfo
-from tree_matrices import *
+from .dataset_info import DatasetInfo
+from .tree_matrices import *
 
 
 class DatasetPreset(Enum):

@@ -1,5 +1,6 @@
 import torch
 from torch import nn, Tensor
+from typing import Optional
 
 from structures import HyperbolicDecoder
 
@@ -16,8 +17,9 @@ class Hypformer(nn.Module):
         n_label: int,
         max_depth: int
     ) -> None:
+        super().__init__()
         self.labels = nn.Embedding(n_label, d_model)
-        self.positional = nn.Parameter(max_depth, d_model)
+        self.positional = nn.Parameter(torch.rand(max_depth, d_model))
         self.proj = nn.Linear(d_encoder, d_model)
         self.decoder = HyperbolicDecoder(d_model, d_k, d_v, n_head, n_layer)
         self.out = nn.Linear(d_model, n_label)
@@ -34,4 +36,5 @@ class Hypformer(nn.Module):
         k = self.proj(bert_last_hidden_state)
         h = self.decoder(q, k, mask_decoder, mask_bert, mask_tgt)
         logits = self.out(h)
+        # breakpoint()
         return logits

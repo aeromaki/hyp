@@ -1,4 +1,5 @@
 import argparse
+import torch
 
 from model import Hypformer
 from dataset import Dataset
@@ -8,8 +9,8 @@ from trainer import Trainer
 
 def create_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--device_e", type=str, default="cuda:0")
-    parser.add_argument("--device_d", type=str, default="cuda:1")
+    parser.add_argument("--device_e", type=str, default="cuda")
+    parser.add_argument("--device_d", type=str, default="cuda")
     parser.add_argument("--d_encoder", type=int, default=768)
 
     parser.add_argument("--d_model", type=int, default=512)
@@ -22,8 +23,9 @@ def create_parser() -> argparse.ArgumentParser:
     parser.add_argument("--lr", type=float, default=1e-06)
     parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--n_bb", type=int, default=1)
-    parser.add_argument("--n_print", type=int, default=500)
+    parser.add_argument("--n_print", type=int, default=50)
     parser.add_argument("--n_save", type=int, default=5000)
+    parser.add_argument("--n_iter", type=int, default=5000)
     parser.add_argument("--checkpoint", type=int, default=None)
 
     return parser
@@ -63,5 +65,6 @@ if __name__ == "__main__":
         batch_size=args.batch_size,
         n_bb=args.n_bb,
         n_print=args.n_print,
-        n_save=args.n_save
+        n_save=args.n_save,
+        n_iter=args.n_iter
     )

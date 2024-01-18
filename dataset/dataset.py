@@ -1,9 +1,9 @@
 from typing import Any, Union
 from datasets import load_dataset
-from torch import tensor, Tensor
+from torch import tensor
 from torch.utils.data import DataLoader
 
-from presets import DatasetPreset
+from .presets import DatasetPreset
 
 
 class Dataset:
@@ -16,9 +16,9 @@ class Dataset:
         graph, load_path, max_depth = preset.value.get_infos()
 
         self.graph = tensor(graph)
-        self.n_label = len(graph.shape[0])
+        self.n_label = self.graph.shape[0]
         self.max_depth = max_depth
-        self.dataset = Dataset._load_dataset(load_path)
+        self.dataset = self._load_dataset(load_path)
 
     def create_loader(
         self,
