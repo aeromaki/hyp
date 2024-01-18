@@ -4,6 +4,7 @@ from torch.utils.data import DataLoader
 from transformers import AutoModel, AutoTokenizer
 from typing import Optional, List, Any
 from tqdm import tqdm
+from sklearn.metrics import f1_score
 
 from dataset import Dataset
 from model import Hypformer
@@ -63,7 +64,8 @@ class EncoderContainer:
         self,
         x: Tensor
     ) -> Tensor:
-        return x.cpu().to(self.device_d)
+        # return x.cpu().to(self.device_d)
+        return x
 
 
 class Trainer:
@@ -79,6 +81,7 @@ class Trainer:
         self.model = model
         self.device_e = device_e
         self.device_d = device_d
+        self.n_label = None
 
     @staticmethod
     def _create_tgt_mask(tgt: Tensor) -> Tensor:
@@ -115,29 +118,31 @@ class Trainer:
         )
         return logits, decoder_label
 
-    """
-    # validation
-    def map_dataloader(data) -> torch.Tensor:
+    def _map_dataloader(self, data) -> torch.Tensor:
         texts, labels = data["text"], data["label"]
         labels = torch.stack(labels).T
-        y_pred, labels = compute(texts, labels, model)
-        return (y_pred.reshape(-1, n_label).argmax(dim=1), labels.flatten())
+        y_pred, labels = self._forward(texts, labels)
+        return (y_pred.reshape(-1, self.n_label).argmax(dim=1), labels.flatten())
 
-    from sklearn.metrics import f1_score
-
-    def val(data: str) -> (float, float):
+    @torch.no_grad()
+    def _val(self, dataset: DataLoader) -> (float, float):
         preds = torch.tensor([])
         labels = torch.tensor([])
 
-        loader = map(map_dataloader, DataLoader(dataset[data], batch_size=batch_size))
-        for pred, label in loader:
+        for pred, label in map(self._map_dataloader, dataset):
             preds = torch.cat([preds, pred.cpu()])
             labels = torch.cat([labels, label.cpu()])
 
         macro = f1_score(preds, labels, average="macro")
         micro = f1_score(preds, labels, average="micro")
         return (macro, micro)
-    """
+
+    def _init_weight(self, dataset: Any) -> Tensor:
+        weight = torch.zeros(self.n_label).to(self.device_d)
+        for i in dataset.dataset["train"]["label"]:
+            weight[i[1:]] += 1
+        weight = weight.mean() / weight
+        return weight
 
     def train(
         self,
@@ -146,15 +151,20 @@ class Trainer:
         batch_size: int,
         n_bb: int,
         n_print: int,
+        n_val: int,
         n_save: int,
         n_iter: int
     ) -> None:
 
-        criterion = nn.CrossEntropyLoss()
+        criterion = nn.CrossEntropyLoss(reduction="none")
         optimizer = optim.Adam(self.model.parameters(), lr=lr)
 
         flat_cnt = 0
         loss_buffer = 0
+
+        self.n_label = dataset.n_label
+
+        weight = self._init_weight(dataset)
 
         for c in tqdm(range(n_iter)):
             # dataloader
@@ -173,13 +183,14 @@ class Trainer:
                 labels = labels.flatten()
 
                 loss = criterion(y_pred, labels)
+                loss = loss * weight[labels]
                 loss = loss.mean()
-                loss.backward()
-                #try:
-                #    loss.backward()
-                #except:
-                #    torch.save({"model": self.model.state_dict()}, save_path(flat_cnt))
-                #    breakpoint()
+
+                try:
+                    loss.backward()
+                except:
+                    torch.save({"model": self.model.state_dict()}, save_path(flat_cnt))
+                    breakpoint()
 
                 # batch-batch
                 flat_cnt += 1
@@ -193,15 +204,13 @@ class Trainer:
                     print("\n", loss_buffer / n_print)
                     loss_buffer = 0
 
-                """
                 # validation
-                if flat_cnt % val_iter == 0:
+                if flat_cnt % n_val == 0:
                     self.model.eval()
                     with torch.no_grad():
-                        macro, micro = val("validation")
+                        macro, micro = self._val(dataset.create_loader("validation", batch_size))
                         print(f"macro {macro}, micro {micro}")
                     self.model.train()
-                """
 
                 # save model (outer iteration)
                 if flat_cnt % n_save == 0:
