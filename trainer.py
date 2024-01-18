@@ -2,13 +2,12 @@ import torch
 from torch import Tensor, nn, optim
 from torch.utils.data import DataLoader
 from transformers import AutoModel, AutoTokenizer
-from typing import Optional, List, Any
+from typing import Optional, List, Any, Callable
 from tqdm import tqdm
 from sklearn.metrics import f1_score
 
 from dataset import Dataset
 from model import Hypformer
-from utils import save_path
 
 
 class EncoderContainer:
@@ -21,6 +20,9 @@ class EncoderContainer:
         self.encoder = EncoderContainer._init_encoder(encoder_name, device_e)
         self.device_e = device_e
         self.device_d = device_d
+        self._switch_device_to_d = lambda x: x.cpu().to(device_d)\
+            if device_e != device_d\
+            else lambda x: x
 
     def __call__(
         self,
@@ -59,13 +61,6 @@ class EncoderContainer:
             attn_mask = attn_mask.to(self.device_e)
         last_hidden_state = self.encoder(input_ids, attn_mask).last_hidden_state
         return last_hidden_state
-
-    def _switch_device_to_d(
-        self,
-        x: Tensor
-    ) -> Tensor:
-        # return x.cpu().to(self.device_d)
-        return x
 
 
 class Trainer:
@@ -142,6 +137,8 @@ class Trainer:
         for i in dataset.dataset["train"]["label"]:
             weight[i[1:]] += 1
         weight = weight.mean() / weight
+        weight = weight.pow(1.5)
+        weight[weight > 1] *= 10
         return weight
 
     def train(
@@ -153,7 +150,8 @@ class Trainer:
         n_print: int,
         n_val: int,
         n_save: int,
-        n_iter: int
+        n_iter: int,
+        save_path: Callable
     ) -> None:
 
         criterion = nn.CrossEntropyLoss(reduction="none")

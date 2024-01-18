@@ -184,3 +184,39 @@ class HyperbolicDecoder(nn.Module):
         for layer in self.layers:
             h = layer(h, k, mask_q, mask_k, mask_tgt)
         return h
+
+
+class HyperbolicHead(nn.Module):
+    def __init__(
+        self,
+        d_model: int,
+        d_k: int,
+        n_head: int,
+        n_label: int
+    ) -> None:
+        super().__init__()
+        self.alignment = HyperbolicAlignmentModel()
+        self.n_head = n_head
+        self.Wq = AttentionProjector(d_model, d_k, n_head)
+        self.Wk = AttentionProjector(d_model, d_k, n_head)
+        self.attention = HyperbolicAttention()
+        self.linear = nn.Linear(n_head, 1)
+        self.layernorm = nn.LayerNorm(n_label)
+
+    def forward(
+        self,
+        q: Tensor,
+        k: Tensor,
+        mask_q: Optional[Tensor] = None,
+        mask_k: Optional[Tensor] = None,
+    ) -> Tensor:
+        q_mh = self.Wq(q)
+        k_mh = self.Wk(k)
+
+        alpha = self.alignment(q_mh, k_mh)
+        alpha = alpha.transpose(1, -1).squeeze()
+
+        score = self.linear(alpha)
+        logits = self.layernorm(score.squeeze())
+
+        return logits
