@@ -2,7 +2,7 @@ import torch
 from torch import Tensor, nn, optim
 from torch.utils.data import DataLoader
 from transformers import AutoModel, AutoTokenizer
-from typing import Optional, List, Any, Callable
+from typing import Optional, List, Any, Callable, Dict
 from tqdm import tqdm
 from sklearn.metrics import f1_score
 import wandb
@@ -143,6 +143,7 @@ class Trainer:
 
     def train(
         self,
+        config_wandb: Dict,
         dataset: Dataset,
         lr: float,
         batch_size: int,
@@ -153,6 +154,7 @@ class Trainer:
         n_iter: int,
         save_path: Callable[[int], str]
     ) -> None:
+        wandb.init(config=config_wandb)
 
         criterion = nn.CrossEntropyLoss(reduction="none")
         optimizer = optim.Adam(self.model.parameters(), lr=lr)
@@ -184,6 +186,8 @@ class Trainer:
                 loss = loss * weight[labels]
                 loss = loss.mean()
 
+                wandb.log({"loss": loss.item()})
+
                 try:
                     loss.backward()
                 except:
@@ -201,7 +205,6 @@ class Trainer:
                 if flat_cnt % n_print == 0:
                     loss_mean = loss_buffer / n_print
                     print("\n", loss_mean)
-                    wandb.log({"loss": loss_mean})
                     loss_buffer = 0
 
                 # validation

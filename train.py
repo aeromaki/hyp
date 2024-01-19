@@ -2,7 +2,6 @@ import argparse
 import torch
 import os
 from transformers import AutoConfig
-import wandb
 
 from model import Hypformer
 from dataset import Dataset
@@ -48,23 +47,6 @@ def create_parser() -> argparse.ArgumentParser:
 if __name__ == "__main__":
     parser = create_parser()
     args = parser.parse_args()
-
-    wandb.init(
-        project=args.project,
-        config={
-            "dataset": args.dataset,
-            "encoder": args.encoder_name,
-            "d_eh": args.d_eh,
-            "d_model": args.d_model,
-            "d_k": args.d_k,
-            "d_v": args.d_v,
-            "n_head": args.n_head,
-            "d_ff": args.d_ff,
-            "n_layer": args.n_layer,
-            "lr": args.lr,
-            "batch_size": args.batch_size * args.n_bb
-        }
-    )
 
     dataset = Dataset(args.dataset)
     n_label, max_depth = dataset.n_label, dataset.max_depth
@@ -114,7 +96,22 @@ if __name__ == "__main__":
     if args.detect_anomaly:
         torch.autograd.detect_anomaly()
 
+    config_wandb = {
+        "dataset": args.dataset,
+        "encoder": args.encoder_name,
+        "d_eh": args.d_eh,
+        "d_model": args.d_model,
+        "d_k": args.d_k,
+        "d_v": args.d_v,
+        "n_head": args.n_head,
+        "d_ff": args.d_ff,
+        "n_layer": args.n_layer,
+        "lr": args.lr,
+        "batch_size": args.batch_size * args.n_bb
+    }
+
     trainer.train(
+        config_wandb=config_wandb,
         dataset=dataset,
         lr=args.lr,
         batch_size=args.batch_size,
