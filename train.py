@@ -76,7 +76,7 @@ if __name__ == "__main__":
 
     n_ckpt = args.ckpt if args.ckpt is not None else 0
     def save_path(x: int) -> str:
-        save_path = f"{args.ckpt_path}/{args.dataset}-{args.d_eh}-{args.d_model}-{args.d_k}-{args.d_v}-{args.n_head}-{args.d_ff}-{args.n_layer}-ckpt-{x+n_ckpt}.tar"
+        save_path = f"{args.ckpt_path}/{args.dataset}-{args.encoder_name}-{args.d_eh}-{args.d_model}-{args.d_k}-{args.d_v}-{args.n_head}-{args.d_ff}-{args.n_layer}-ckpt-{x+n_ckpt}.tar"
         return save_path
 
     if args.ckpt is not None:
