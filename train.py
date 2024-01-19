@@ -33,6 +33,8 @@ def create_parser() -> argparse.ArgumentParser:
     parser.add_argument("--ckpt", type=int, default=None)
     parser.add_argument("--ckpt_path", type=str, default="./checkpoints")
 
+    parser.add_argument("--detect_anomaly", action="store_true")
+
     return parser
 
 
@@ -72,7 +74,8 @@ if __name__ == "__main__":
         device_d=args.device_d
     )
 
-    torch.autograd.detect_anomaly(True)
+    if args.detect_anomaly:
+        torch.autograd.detect_anomaly()
 
     trainer.train(
         dataset=dataset,
