@@ -20,9 +20,9 @@ class EncoderContainer:
         self.encoder = EncoderContainer._init_encoder(encoder_name, device_e)
         self.device_e = device_e
         self.device_d = device_d
-        self._switch_device_to_d = lambda x: x.cpu().to(device_d)\
+        self._switch_device_to_d = (lambda x: x.cpu().to(device_d))\
             if device_e != device_d\
-            else lambda x: x
+            else (lambda x: x)
 
     def __call__(
         self,
