@@ -138,7 +138,7 @@ class Trainer:
         preds = torch.tensor([])
         labels = torch.tensor([])
 
-        for pred, label in map(self._map_dataloader, self.dataset):
+        for pred, label in map(self._map_dataloader, dataset):
             preds = torch.cat([preds, pred.cpu()])
             labels = torch.cat([labels, label.cpu()])
 
