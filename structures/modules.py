@@ -201,7 +201,6 @@ class HyperbolicHead(nn.Module):
         self.Wk = AttentionProjector(d_model, d_k, n_head)
         self.attention = HyperbolicAttention()
         self.linear = nn.Linear(n_head, 1)
-        self.layernorm = nn.LayerNorm(n_label)
 
     def forward(
         self,
@@ -216,7 +215,5 @@ class HyperbolicHead(nn.Module):
         alpha = self.alignment(q_mh, k_mh)
         alpha = alpha.transpose(1, -1).squeeze()
 
-        score = self.linear(alpha)
-        logits = self.layernorm(score.squeeze())
-
+        logits = self.linear(alpha).squeeze()
         return logits

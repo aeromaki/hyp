@@ -1,5 +1,6 @@
 import argparse
 import torch
+import os
 
 from model import Hypformer
 from dataset import Dataset
@@ -28,7 +29,8 @@ def create_parser() -> argparse.ArgumentParser:
     parser.add_argument("--n_val", type=int, default=500)
     parser.add_argument("--n_save", type=int, default=1000)
     parser.add_argument("--n_iter", type=int, default=5000)
-    parser.add_argument("--checkpoint", type=int, default=None)
+    parser.add_argument("--ckpt", type=int, default=None)
+    parser.add_argument("--ckpt_path", type=str, default="./checkpoints")
 
     return parser
 
@@ -55,9 +57,17 @@ if __name__ == "__main__":
         max_depth
     ).to(args.device_d)
 
-    if args.checkpoint is not None:
-        checkpoint = torch.load(save_path(0))
-        model.load_state_dict(checkpoint["model"], strict=False)
+    if not os.path.exists(args.ckpt_path):
+        os.mkdir(args.ckpt_path)
+
+    n_ckpt = args.ckpt if args.ckpt is not None else 0
+    def save_path(x: int) -> str:
+        save_path = f"{args.ckpt_path}/{args.dataset}-{args.d_model}-{args.d_k}-{args.d_v}-{args.n_head}-{args.n_layer}-ckpt-{x+n_ckpt}.tar"
+        return save_path
+
+    if args.ckpt is not None:
+        ckpt = torch.load(save_path(0))
+        model.load_state_dict(ckpt["model"], strict=False)
 
     trainer = Trainer(
         model=model,

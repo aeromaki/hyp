@@ -133,12 +133,11 @@ class Trainer:
         return (macro, micro)
 
     def _init_weight(self, dataset: Any) -> Tensor:
-        weight = torch.zeros(self.n_label).to(self.device_d)
+        count = torch.zeros(self.n_label).to(self.device_d)
         for i in dataset.dataset["train"]["label"]:
-            weight[i[1:]] += 1
-        weight = weight.mean() / weight
-        weight = weight.pow(1.5)
-        weight[weight > 1] *= 10
+            count[i[1:]] += 1
+        count[0] = 1
+        weight = count.mean() / count
         return weight
 
     def train(
@@ -151,7 +150,7 @@ class Trainer:
         n_val: int,
         n_save: int,
         n_iter: int,
-        save_path: Callable
+        save_path: Callable[[int], str]
     ) -> None:
 
         criterion = nn.CrossEntropyLoss(reduction="none")
