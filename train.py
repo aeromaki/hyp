@@ -16,13 +16,13 @@ def create_parser() -> argparse.ArgumentParser:
 
     parser.add_argument("--d_model", type=int, default=512)
     parser.add_argument("--d_k", type=int, default=64)
-    parser.add_argument("--d_v", type=int, default=64)
+    parser.add_argument("--d_v", type=int, default=None)
     parser.add_argument("--n_head", type=int, default=8)
-    parser.add_argument("--d_ff", type=int, default=2048)
+    parser.add_argument("--d_ff", type=int, default=None)
     parser.add_argument("--n_layer", type=int, default=6)
 
     parser.add_argument("--dataset", type=str, default="WOS_L")
-    parser.add_argument("--lr", type=float, default=1e-06)
+    parser.add_argument("--lr", type=float, default=1e-05)
     parser.add_argument("--batch_size", type=int, default=32)
 
     parser.add_argument("--n_bb", type=int, default=1)
@@ -45,6 +45,11 @@ if __name__ == "__main__":
 
     dataset = Dataset(args.dataset)
     n_label, max_depth = dataset.n_label, dataset.max_depth
+
+    if args.d_v is None:
+        args.d_v = args.d_k
+    if args.d_ff is None:
+        args.d_ff = args.d_model * 2
 
     model = Hypformer(
         args.d_encoder,
