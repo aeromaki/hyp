@@ -138,7 +138,7 @@ class Trainer:
         preds = torch.tensor([])
         labels = torch.tensor([])
 
-        for pred, label in map(self._map_dataloader, dataset):
+        for pred, label in map(self._map_dataloader, self.dataset):
             preds = torch.cat([preds, pred.cpu()])
             labels = torch.cat([labels, label.cpu()])
 
@@ -146,10 +146,10 @@ class Trainer:
         micro = f1_score(preds, labels, average="micro")
         return macro, micro
 
-    def _init_weight(self, dataset: Any, use_weight: bool) -> Tensor:
+    def _init_weight(self, use_weight: bool) -> Tensor:
         if use_weight:
             count = torch.zeros(self.n_label)
-            for i in dataset.dataset["train"]["label"]:
+            for i in self.dataset.dataset["train"]["label"]:
                 count[i[1:]] += 1
             count[0] = 1
             weight = count.mean() / count
@@ -184,7 +184,7 @@ class Trainer:
         flat_cnt = 0
         loss_buffer = 0
 
-        weight = self._init_weight(self.dataset, use_weight)
+        weight = self._init_weight(use_weight)
 
         for c in tqdm(range(n_iter)):
             # dataloader
