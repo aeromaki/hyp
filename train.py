@@ -72,6 +72,8 @@ if __name__ == "__main__":
         device_d=args.device_d
     )
 
+    torch.autograd.detect_anomaly(True)
+
     trainer.train(
         dataset=dataset,
         lr=args.lr,
