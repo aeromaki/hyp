@@ -40,10 +40,6 @@ if __name__ == "__main__":
     parser = create_parser()
     args = parser.parse_args()
 
-    def save_path(x: int) -> str:
-        save_path = f"./checkpoints/{args.dataset}-{args.d_model}-{args.d_k}-{args.d_v}-{args.n_head}-{args.n_layer}-ckpt-{x+args.checkpoint}.tar"
-        return save_path
-
     dataset = Dataset(args.dataset)
     n_label, max_depth = dataset.n_label, dataset.max_depth
 
