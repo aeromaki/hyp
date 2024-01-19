@@ -5,6 +5,7 @@ from transformers import AutoModel, AutoTokenizer
 from typing import Optional, List, Any, Callable
 from tqdm import tqdm
 from sklearn.metrics import f1_score
+import wandb
 
 from dataset import Dataset
 from model import Hypformer
@@ -198,7 +199,9 @@ class Trainer:
                 # print loss
                 loss_buffer += loss.item()
                 if flat_cnt % n_print == 0:
-                    print("\n", loss_buffer / n_print)
+                    loss_mean = loss_buffer / n_print
+                    print("\n", loss_mean)
+                    wandb.log({"loss": loss_mean})
                     loss_buffer = 0
 
                 # validation
@@ -207,6 +210,7 @@ class Trainer:
                     with torch.no_grad():
                         macro, micro = self._val(dataset.create_loader("validation", batch_size))
                         print(f"macro {macro}, micro {micro}")
+                        wandb.log({"macro": macro, "micro": micro})
                     self.model.train()
 
                 # save model (outer iteration)

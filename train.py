@@ -2,6 +2,7 @@ import argparse
 import torch
 import os
 from transformers import AutoConfig
+import wandb
 
 from model import Hypformer
 from dataset import Dataset
@@ -10,6 +11,8 @@ from trainer import Trainer
 
 def create_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
+
+    parser.add_argument("--project", type=str, default="hyp")
 
     parser.add_argument("--device_e", type=str, default="cuda:0")
     parser.add_argument("--device_d", type=str, default="cuda:1")
@@ -45,6 +48,23 @@ def create_parser() -> argparse.ArgumentParser:
 if __name__ == "__main__":
     parser = create_parser()
     args = parser.parse_args()
+
+    wandb.init(
+        project=args.project,
+        config={
+            "dataset": args.dataset,
+            "encoder": args.encoder_name,
+            "d_eh": args.d_eh,
+            "d_model": args.d_model,
+            "d_k": args.d_k,
+            "d_v": args.d_v,
+            "n_head": args.n_head,
+            "d_ff": args.d_ff,
+            "n_layer": args.n_layer,
+            "lr": args.lr,
+            "batch_size": args.batch_size * args.n_bb
+        }
+    )
 
     dataset = Dataset(args.dataset)
     n_label, max_depth = dataset.n_label, dataset.max_depth
