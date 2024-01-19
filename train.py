@@ -30,6 +30,7 @@ def create_parser() -> argparse.ArgumentParser:
 
     parser.add_argument("--dataset", type=str, default="WOS_L")
     parser.add_argument("--mask_label", action="store_true")
+    parser.add_argument("--use_weight", action="store_true")
     parser.add_argument("--lr", type=float, default=1e-05)
     parser.add_argument("--batch_size", type=int, default=32)
 
@@ -100,7 +101,10 @@ if __name__ == "__main__":
         torch.autograd.detect_anomaly()
 
     if args.name is None:
+        mask_label = "-mask" if args.mask_label else ""
+        use_weight = "-weight" if args.use_weight else ""
         args.name = f"{args.dataset}-{args.encoder_name}-{args.d_eh}-{args.d_model}-{args.d_k}-{args.d_v}-{args.n_head}-{args.d_ff}-{args.n_layer}"
+        args.name += f"{mask_label}{use_weight}"
 
     config_wandb = {
         "project": args.project,
@@ -131,5 +135,6 @@ if __name__ == "__main__":
         n_iter=args.n_iter,
         save_path=save_path,
         mask_label=args.mask_label,
+        use_weight=args.use_weight,
         config_wandb=config_wandb
     )

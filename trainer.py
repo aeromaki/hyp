@@ -141,12 +141,16 @@ class Trainer:
         micro = f1_score(preds, labels, average="micro")
         return macro, micro
 
-    def _init_weight(self, dataset: Any) -> Tensor:
-        count = torch.zeros(self.n_label).to(self.device_d)
-        for i in dataset.dataset["train"]["label"]:
-            count[i[1:]] += 1
-        count[0] = 1
-        weight = count.mean() / count
+    def _init_weight(self, dataset: Any, use_weight: bool) -> Tensor:
+        if use_weight:
+            count = torch.zeros(self.n_label)
+            for i in dataset.dataset["train"]["label"]:
+                count[i[1:]] += 1
+            count[0] = 1
+            weight = count.mean() / count
+        else:
+            weight = torch.ones(self.n_label)
+        weight = weight.to(self.device_d)
         return weight
 
     def train(
@@ -160,6 +164,7 @@ class Trainer:
         n_save: int,
         n_iter: int,
         mask_label: bool,
+        use_weight: bool,
         save_path: Callable[[int], str],
         config_wandb: Optional[Dict] = None
     ) -> None:
@@ -178,7 +183,7 @@ class Trainer:
         self.n_label = dataset.n_label
         dataset.graph = dataset.graph.to(self.device_d)
 
-        weight = self._init_weight(dataset)
+        weight = self._init_weight(dataset, use_weight)
 
         for c in tqdm(range(n_iter)):
             # dataloader
@@ -206,11 +211,7 @@ class Trainer:
 
                 log({"loss": loss.item()})
 
-                try:
-                    loss.backward()
-                except:
-                    torch.save({"model": self.model.state_dict()}, save_path(flat_cnt))
-                    breakpoint()
+                loss.backward()
 
                 # batch-batch
                 flat_cnt += 1
