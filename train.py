@@ -49,7 +49,7 @@ if __name__ == "__main__":
     if args.d_v is None:
         args.d_v = args.d_k
     if args.d_ff is None:
-        args.d_ff = args.d_model * 2
+        args.d_ff = args.d_model * 4
 
     model = Hypformer(
         args.d_encoder,
