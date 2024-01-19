@@ -93,6 +93,7 @@ if __name__ == "__main__":
     trainer = Trainer(
         model=model,
         encoder_name=args.encoder_name,
+        dataset=dataset,
         device_e=args.device_e,
         device_d=args.device_d
     )
@@ -125,7 +126,6 @@ if __name__ == "__main__":
     } if not args.no_wandb else None
 
     trainer.train(
-        dataset=dataset,
         lr=args.lr,
         batch_size=args.batch_size,
         n_bb=args.n_bb,

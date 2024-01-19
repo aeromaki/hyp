@@ -69,16 +69,21 @@ class Trainer:
     def __init__(
         self,
         model: Hypformer,
-        encoder_name: str = "bert-base-uncased",
-        device_e: str = "cpu",
-        device_d: str = "cpu"
+        encoder_name: str,
+        dataset: Dataset,
+        device_e: str,
+        device_d: str,
     ) -> None:
         self.container = EncoderContainer(encoder_name, device_e, device_d)
         self.tokenizer = AutoTokenizer.from_pretrained(encoder_name)
         self.model = model
+
+        self.dataset = dataset
+        self.n_label = dataset.n_label
+        self.graph = dataset.graph.to(device_d)
+
         self.device_e = device_e
         self.device_d = device_d
-        self.n_label = None
 
     @staticmethod
     def _create_tgt_mask(tgt: Tensor) -> Tensor:
@@ -91,7 +96,7 @@ class Trainer:
         self,
         texts: List[str],
         labels: Tensor,
-        graph: Optional[Tensor] = None
+        mask_label: bool
     ) -> (Tensor, Tensor):
         input_ids, _, attn_mask = self.tokenizer(
             texts,
@@ -109,7 +114,7 @@ class Trainer:
 
 
         mask_label = graph[decoder_input] == 0\
-            if graph is not None\
+            if mask_label\
             else None
 
         logits = self.container(
@@ -155,7 +160,6 @@ class Trainer:
 
     def train(
         self,
-        dataset: Dataset,
         lr: float,
         batch_size: int,
         n_bb: int,
@@ -180,15 +184,12 @@ class Trainer:
         flat_cnt = 0
         loss_buffer = 0
 
-        self.n_label = dataset.n_label
-        dataset.graph = dataset.graph.to(self.device_d)
-
-        weight = self._init_weight(dataset, use_weight)
+        weight = self._init_weight(self.dataset, use_weight)
 
         for c in tqdm(range(n_iter)):
             # dataloader
             torch.manual_seed(c)
-            train_loader = dataset.create_loader("train", batch_size)
+            train_loader = self.dataset.create_loader("train", batch_size)
 
             # inner iteration
             for data in tqdm(train_loader):
@@ -197,11 +198,7 @@ class Trainer:
                 labels = torch.stack(labels).T
 
                 # step
-                y_pred, labels = self._forward(
-                    texts,
-                    labels,
-                    dataset.graph if mask_label else None
-                )
+                y_pred, labels = self._forward(texts, labels, mask_label)
                 y_pred = y_pred.reshape(-1, dataset.n_label)
                 labels = labels.flatten()
 
@@ -231,7 +228,7 @@ class Trainer:
                 if flat_cnt % n_val == 0:
                     self.model.eval()
                     with torch.no_grad():
-                        macro, micro = self._val(dataset.create_loader("validation", batch_size))
+                        macro, micro = self._val(self.dataset.create_loader("validation", batch_size))
                         print(f"macro {macro}, micro {micro}")
                         log({"macro": macro, "micro": micro})
                     self.model.train()
