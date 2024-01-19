@@ -56,6 +56,7 @@ if __name__ == "__main__":
 
     model = Hypformer(
         args.d_encoder,
+        args.d_eh,
         args.d_model,
         args.d_k,
         args.d_v,
