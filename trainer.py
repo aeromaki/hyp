@@ -204,6 +204,7 @@ class Trainer:
                 loss_buffer += loss.item()
                 if flat_cnt % n_print == 0:
                     loss_mean = loss_buffer / n_print
+                    wandb.log({"loss_mean": loss_mean})
                     print("\n", loss_mean)
                     loss_buffer = 0
 
