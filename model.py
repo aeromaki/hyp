@@ -36,10 +36,11 @@ class Hypformer(nn.Module):
         decoder_input_ids: Tensor,
         mask_bert: Optional[Tensor] = None,
         mask_decoder: Optional[Tensor] = None,
-        mask_tgt: Optional[Tensor] = None
+        mask_tgt: Optional[Tensor] = None,
+        mask_label: Optional[Tensor] = None
     ) -> Tensor:
         q = self.labels[decoder_input_ids] + self.positional[:decoder_input_ids.shape[-1]]
         k = self.map(bert_last_hidden_state)
         h = self.decoder(q, k, mask_decoder, mask_bert, mask_tgt)
-        logits = self.out(h, self.labels)
+        logits = self.out(h, self.labels, mask_decoder, mask_label)
         return logits

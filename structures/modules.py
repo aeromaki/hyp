@@ -221,5 +221,8 @@ class HyperbolicHead(nn.Module):
         alpha = self.alignment(q_mh, k_mh)
         alpha = alpha.transpose(1, -1).squeeze(1)
 
-        logits = self.linear(alpha).squeeze()
+        logits = self.linear(alpha).squeeze(-1)
+        if mask_k is not None:
+            logits[mask_k] = -1000
+
         return logits

@@ -11,6 +11,7 @@ from trainer import Trainer
 def create_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
 
+    parser.add_argument("--no_wandb", action="store_true")
     parser.add_argument("--project", type=str, default="hyp")
     parser.add_argument("--name", type=str, default=None)
 
@@ -28,6 +29,7 @@ def create_parser() -> argparse.ArgumentParser:
     parser.add_argument("--n_layer", type=int, default=6)
 
     parser.add_argument("--dataset", type=str, default="WOS_L")
+    parser.add_argument("--mask_label", action="store_true")
     parser.add_argument("--lr", type=float, default=1e-05)
     parser.add_argument("--batch_size", type=int, default=32)
 
@@ -116,10 +118,9 @@ if __name__ == "__main__":
             "lr": args.lr,
             "batch_size": args.batch_size * args.n_bb
         }
-    }
+    } if not args.no_wandb else None
 
     trainer.train(
-        config_wandb=config_wandb,
         dataset=dataset,
         lr=args.lr,
         batch_size=args.batch_size,
@@ -128,5 +129,7 @@ if __name__ == "__main__":
         n_val=args.n_val,
         n_save=args.n_save,
         n_iter=args.n_iter,
-        save_path=save_path
+        save_path=save_path,
+        mask_label=args.mask_label,
+        config_wandb=config_wandb
     )

@@ -32,13 +32,14 @@ class EncoderContainer:
         decoder_input: Tensor,
         attn_mask: Optional[Tensor] = None,
         decoder_mask: Optional[Tensor] = None,
-        mask_tgt: Optional[Tensor] = None
+        mask_tgt: Optional[Tensor] = None,
+        mask_label: Optional[Tensor] = None
     ) -> Tensor:
         e = self._get_encoder_last_hidden_state(input_ids, attn_mask)
         e = self._switch_device_to_d(e)
         if attn_mask is not None:
             attn_mask = self._switch_device_to_d(attn_mask)
-        pred = model(e, decoder_input, attn_mask, decoder_mask, mask_tgt)
+        pred = model(e, decoder_input, attn_mask, decoder_mask, mask_tgt, mask_label)
         return pred
 
     @staticmethod
@@ -89,7 +90,8 @@ class Trainer:
     def _forward(
         self,
         texts: List[str],
-        labels: Tensor
+        labels: Tensor,
+        graph: Optional[Tensor] = None
     ) -> (Tensor, Tensor):
         input_ids, _, attn_mask = self.tokenizer(
             texts,
@@ -105,12 +107,18 @@ class Trainer:
         decoder_label = labels[...,1:]
         mask_tgt = Trainer._create_tgt_mask(decoder_input)
 
+
+        mask_label = graph[decoder_input] == 0\
+            if graph is not None\
+            else None
+
         logits = self.container(
             model=self.model,
             input_ids=input_ids,
             decoder_input=decoder_input,
             attn_mask=attn_mask,
-            mask_tgt=mask_tgt
+            mask_tgt=mask_tgt,
+            mask_label=mask_label
         )
         return logits, decoder_label
 
@@ -143,7 +151,6 @@ class Trainer:
 
     def train(
         self,
-        config_wandb: Dict,
         dataset: Dataset,
         lr: float,
         batch_size: int,
@@ -152,9 +159,15 @@ class Trainer:
         n_val: int,
         n_save: int,
         n_iter: int,
-        save_path: Callable[[int], str]
+        mask_label: bool,
+        save_path: Callable[[int], str],
+        config_wandb: Optional[Dict] = None
     ) -> None:
-        wandb.init(**config_wandb)
+        if config_wandb is not None:
+            wandb.init(**config_wandb)
+            log = lambda x: wandb.log(x)
+        else:
+            log = lambda x: None
 
         criterion = nn.CrossEntropyLoss(reduction="none")
         optimizer = optim.Adam(self.model.parameters(), lr=lr)
@@ -163,6 +176,7 @@ class Trainer:
         loss_buffer = 0
 
         self.n_label = dataset.n_label
+        dataset.graph = dataset.graph.to(self.device_d)
 
         weight = self._init_weight(dataset)
 
@@ -178,7 +192,11 @@ class Trainer:
                 labels = torch.stack(labels).T
 
                 # step
-                y_pred, labels = self._forward(texts, labels)
+                y_pred, labels = self._forward(
+                    texts,
+                    labels,
+                    dataset.graph if mask_label else None
+                )
                 y_pred = y_pred.reshape(-1, dataset.n_label)
                 labels = labels.flatten()
 
@@ -186,7 +204,7 @@ class Trainer:
                 loss = loss * weight[labels]
                 loss = loss.mean()
 
-                wandb.log({"loss": loss.item()})
+                log({"loss": loss.item()})
 
                 try:
                     loss.backward()
@@ -204,8 +222,8 @@ class Trainer:
                 loss_buffer += loss.item()
                 if flat_cnt % n_print == 0:
                     loss_mean = loss_buffer / n_print
-                    wandb.log({"loss_mean": loss_mean})
                     print("\n", loss_mean)
+                    log({"loss_mean": loss_mean})
                     loss_buffer = 0
 
                 # validation
@@ -214,7 +232,7 @@ class Trainer:
                     with torch.no_grad():
                         macro, micro = self._val(dataset.create_loader("validation", batch_size))
                         print(f"macro {macro}, micro {micro}")
-                        wandb.log({"macro": macro, "micro": micro})
+                        log({"macro": macro, "micro": micro})
                     self.model.train()
 
                 # save model (outer iteration)
