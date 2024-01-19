@@ -130,12 +130,17 @@ class HyperbolicDecoderLayer(nn.Module):
         d_model: int,
         d_k: int,
         d_v: int,
-        n_head: int
+        n_head: int,
+        d_ff: int
     ) -> None:
         super().__init__()
         self.att_self = HyperbolicMHA(d_model, d_k, d_v, n_head)
         self.att_cross = HyperbolicMHA(d_model, d_k, d_v, n_head)
-        self.linear = nn.Linear(d_model, d_model)
+        self.ff = nn.Sequential(
+            nn.Linear(d_model, d_ff),
+            nn.GELU(),
+            nn.Linear(d_ff, d_model)
+        )
         self.layernorm = nn.LayerNorm(d_model)
 
     def forward(
@@ -147,13 +152,13 @@ class HyperbolicDecoderLayer(nn.Module):
         mask_tgt: Optional[Tensor] = None
     ) -> Tensor:
         h_self = self.att_self(q, q, q, mask_q, mask_q, mask_tgt)
-        res_self = self.layernorm(q + h_self).relu()
+        res_self = self.layernorm(q + h_self)
 
         h_cross = self.att_cross(res_self, k, k, mask_q, mask_k)
-        res_cross = self.layernorm(res_self + h_cross).relu()
+        res_cross = self.layernorm(res_self + h_cross)
 
-        h_linear = self.linear(res_cross)
-        res = self.layernorm(res_cross + h_linear).relu()
+        h_ff = self.ff(res_cross)
+        res = self.layernorm(res_cross + h_ff)
 
         return res
 
@@ -165,11 +170,12 @@ class HyperbolicDecoder(nn.Module):
         d_k: int,
         d_v: int,
         n_head: int,
+        d_ff: int,
         n_layer: int
     ) -> None:
         super().__init__()
         self.layers = nn.ModuleList([
-            HyperbolicDecoderLayer(d_model, d_k, d_v, n_head) for _ in range(n_layer)
+            HyperbolicDecoderLayer(d_model, d_k, d_v, n_head, d_ff) for _ in range(n_layer)
         ])
 
     def forward(

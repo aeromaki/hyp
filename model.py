@@ -13,6 +13,7 @@ class Hypformer(nn.Module):
         d_k: int,
         d_v: int,
         n_head: int,
+        d_ff: int,
         n_layer: int,
         n_label: int,
         max_depth: int
@@ -21,7 +22,7 @@ class Hypformer(nn.Module):
         self.labels = nn.Parameter(torch.rand(n_label, d_model))
         self.positional = nn.Parameter(torch.rand(max_depth, d_model))
         self.proj = nn.Linear(d_encoder, d_model)
-        self.decoder = HyperbolicDecoder(d_model, d_k, d_v, n_head, n_layer)
+        self.decoder = HyperbolicDecoder(d_model, d_k, d_v, n_head, d_ff, n_layer)
         self.out = HyperbolicHead(d_model, d_k, n_head, n_label)
 
     def forward(

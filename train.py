@@ -18,6 +18,7 @@ def create_parser() -> argparse.ArgumentParser:
     parser.add_argument("--d_k", type=int, default=64)
     parser.add_argument("--d_v", type=int, default=64)
     parser.add_argument("--n_head", type=int, default=8)
+    parser.add_argument("--d_ff", type=int, default=2048)
     parser.add_argument("--n_layer", type=int, default=6)
 
     parser.add_argument("--dataset", type=str, default="WOS_L")
@@ -51,6 +52,7 @@ if __name__ == "__main__":
         args.d_k,
         args.d_v,
         args.n_head,
+        args.d_ff,
         args.n_layer,
         n_label,
         max_depth
