@@ -49,7 +49,7 @@ if __name__ == "__main__":
     dataset = Dataset(args.dataset)
     n_label, max_depth = dataset.n_label, dataset.max_depth
 
-    d_encoder = AutoConfig.from_pretrained("tunib/electra-ko-en-base").hidden_size
+    d_encoder = AutoConfig.from_pretrained(args.encoder_name).hidden_size
 
     if args.d_eh is None:
         args.d_eh = d_encoder * 4
@@ -76,7 +76,8 @@ if __name__ == "__main__":
 
     n_ckpt = args.ckpt if args.ckpt is not None else 0
     def save_path(x: int) -> str:
-        save_path = f"{args.ckpt_path}/{args.dataset}-{args.encoder_name}-{args.d_eh}-{args.d_model}-{args.d_k}-{args.d_v}-{args.n_head}-{args.d_ff}-{args.n_layer}-ckpt-{x+n_ckpt}.tar"
+        alter_name = "@".join(args.encoder_name.split("/"))
+        save_path = f"{args.ckpt_path}/{args.dataset}-{alter_name}-{args.d_eh}-{args.d_model}-{args.d_k}-{args.d_v}-{args.n_head}-{args.d_ff}-{args.n_layer}-ckpt-{x+n_ckpt}.tar"
         return save_path
 
     if args.ckpt is not None:
