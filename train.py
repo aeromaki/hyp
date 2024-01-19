@@ -13,6 +13,7 @@ def create_parser() -> argparse.ArgumentParser:
     parser.add_argument("--device_e", type=str, default="cuda:0")
     parser.add_argument("--device_d", type=str, default="cuda:1")
     parser.add_argument("--d_encoder", type=int, default=768)
+    parser.add_argument("--d_eh", type=int, default=None)
 
     parser.add_argument("--d_model", type=int, default=512)
     parser.add_argument("--d_k", type=int, default=64)
@@ -46,6 +47,8 @@ if __name__ == "__main__":
     dataset = Dataset(args.dataset)
     n_label, max_depth = dataset.n_label, dataset.max_depth
 
+    if args.d_eh is None:
+        args.d_eh = args.d_encoder * 4
     if args.d_v is None:
         args.d_v = args.d_k
     if args.d_ff is None:
