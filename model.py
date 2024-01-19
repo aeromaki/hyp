@@ -28,7 +28,7 @@ class Hypformer(nn.Module):
             nn.Linear(d_eh, d_model)
         )
         self.decoder = HyperbolicDecoder(d_model, d_k, d_v, n_head, d_ff, n_layer)
-        self.out = HyperbolicHead(d_model, d_k, n_head, n_label)
+        self.out = HyperbolicHead(d_model, d_k, n_head)
 
     def forward(
         self,
@@ -42,5 +42,9 @@ class Hypformer(nn.Module):
         q = self.labels[decoder_input_ids] + self.positional[:decoder_input_ids.shape[-1]]
         k = self.map(bert_last_hidden_state)
         h = self.decoder(q, k, mask_decoder, mask_bert, mask_tgt)
-        logits = self.out(h, self.labels, mask_decoder, mask_label)
+
+        logits = self.out(h, self.labels)
+        if mask_label is not None:
+            logits[mask_label] = -1000
+
         return logits

@@ -197,8 +197,7 @@ class HyperbolicHead(nn.Module):
         self,
         d_model: int,
         d_k: int,
-        n_head: int,
-        n_label: int
+        n_head: int
     ) -> None:
         super().__init__()
         self.alignment = HyperbolicAlignmentModel()
@@ -211,9 +210,7 @@ class HyperbolicHead(nn.Module):
     def forward(
         self,
         q: Tensor,
-        k: Tensor,
-        mask_q: Optional[Tensor] = None,
-        mask_k: Optional[Tensor] = None,
+        k: Tensor
     ) -> Tensor:
         q_mh = self.Wq(q)
         k_mh = self.Wk(k)
@@ -222,7 +219,4 @@ class HyperbolicHead(nn.Module):
         alpha = alpha.transpose(1, -1).squeeze(1)
 
         logits = self.linear(alpha).squeeze(-1)
-        if mask_k is not None:
-            logits[mask_k] = -1000
-
         return logits
