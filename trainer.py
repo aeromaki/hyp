@@ -154,7 +154,7 @@ class Trainer:
         n_iter: int,
         save_path: Callable[[int], str]
     ) -> None:
-        wandb.init(config=config_wandb)
+        wandb.init(**config_wandb)
 
         criterion = nn.CrossEntropyLoss(reduction="none")
         optimizer = optim.Adam(self.model.parameters(), lr=lr)

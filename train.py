@@ -12,6 +12,7 @@ def create_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--project", type=str, default="hyp")
+    parser.add_argument("--name", type=str, default=None)
 
     parser.add_argument("--device_e", type=str, default="cuda:0")
     parser.add_argument("--device_d", type=str, default="cuda:1")
@@ -96,18 +97,25 @@ if __name__ == "__main__":
     if args.detect_anomaly:
         torch.autograd.detect_anomaly()
 
+    if args.name is None:
+        args.name = f"{args.dataset}-{args.encoder_name}-{args.d_eh}-{args.d_model}-{args.d_k}-{args.d_v}-{args.n_head}-{args.d_ff}-{args.n_layer}"
+
     config_wandb = {
-        "dataset": args.dataset,
-        "encoder": args.encoder_name,
-        "d_eh": args.d_eh,
-        "d_model": args.d_model,
-        "d_k": args.d_k,
-        "d_v": args.d_v,
-        "n_head": args.n_head,
-        "d_ff": args.d_ff,
-        "n_layer": args.n_layer,
-        "lr": args.lr,
-        "batch_size": args.batch_size * args.n_bb
+        "project": args.project,
+        "name": args.name,
+        "config": {
+            "dataset": args.dataset,
+            "encoder": args.encoder_name,
+            "d_eh": args.d_eh,
+            "d_model": args.d_model,
+            "d_k": args.d_k,
+            "d_v": args.d_v,
+            "n_head": args.n_head,
+            "d_ff": args.d_ff,
+            "n_layer": args.n_layer,
+            "lr": args.lr,
+            "batch_size": args.batch_size * args.n_bb
+        }
     }
 
     trainer.train(
