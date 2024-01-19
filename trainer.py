@@ -199,7 +199,7 @@ class Trainer:
 
                 # step
                 y_pred, labels = self._forward(texts, labels, mask_label)
-                y_pred = y_pred.reshape(-1, dataset.n_label)
+                y_pred = y_pred.reshape(-1, self.n_label)
                 labels = labels.flatten()
 
                 loss = criterion(y_pred, labels)
