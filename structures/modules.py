@@ -50,7 +50,7 @@ class HyperbolicAttention(nn.Module):
             alpha = alpha.clone()
             alpha[:, :, mask_tgt] = -1000
 
-        att = einstein_midpoint(alpha.squeeze(), v_k)
+        att = einstein_midpoint(alpha.squeeze(-1), v_k)
         if mask_q is not None:
             att = att * mask_q.unsqueeze(-1)
 
@@ -213,7 +213,7 @@ class HyperbolicHead(nn.Module):
         k_mh = self.Wk(k)
 
         alpha = self.alignment(q_mh, k_mh)
-        alpha = alpha.transpose(1, -1).squeeze()
+        alpha = alpha.transpose(1, -1).squeeze(1)
 
         logits = self.linear(alpha).squeeze()
         return logits

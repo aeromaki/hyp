@@ -130,7 +130,7 @@ class Trainer:
 
         macro = f1_score(preds, labels, average="macro")
         micro = f1_score(preds, labels, average="micro")
-        return (macro, micro)
+        return macro, micro
 
     def _init_weight(self, dataset: Any) -> Tensor:
         count = torch.zeros(self.n_label).to(self.device_d)

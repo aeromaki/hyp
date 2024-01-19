@@ -26,8 +26,9 @@ def create_parser() -> argparse.ArgumentParser:
 
     parser.add_argument("--n_bb", type=int, default=1)
     parser.add_argument("--n_print", type=int, default=100)
-    parser.add_argument("--n_val", type=int, default=500)
-    parser.add_argument("--n_save", type=int, default=1000)
+
+    parser.add_argument("--n_val", type=int, default=1000)
+    parser.add_argument("--n_save", type=int, default=2000)
     parser.add_argument("--n_iter", type=int, default=5000)
     parser.add_argument("--ckpt", type=int, default=None)
     parser.add_argument("--ckpt_path", type=str, default="./checkpoints")
