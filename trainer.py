@@ -85,6 +85,8 @@ class Trainer:
         self.device_e = device_e
         self.device_d = device_d
 
+        self.mask_label = None
+
     @staticmethod
     def _create_tgt_mask(tgt: Tensor) -> Tensor:
         len_seq = tgt.shape[-1]
@@ -95,8 +97,7 @@ class Trainer:
     def _forward(
         self,
         texts: List[str],
-        labels: Tensor,
-        mask_label: bool
+        labels: Tensor
     ) -> (Tensor, Tensor):
         input_ids, _, attn_mask = self.tokenizer(
             texts,
@@ -112,9 +113,8 @@ class Trainer:
         decoder_label = labels[...,1:]
         mask_tgt = Trainer._create_tgt_mask(decoder_input)
 
-
         mask_label = self.graph[decoder_input] == 0\
-            if mask_label\
+            if self.mask_label\
             else None
 
         logits = self.container(
@@ -172,6 +172,8 @@ class Trainer:
         save_path: Callable[[int], str],
         config_wandb: Optional[Dict] = None
     ) -> None:
+        self.mask_label = mask_label
+
         if config_wandb is not None:
             wandb.init(**config_wandb)
             log = lambda x: wandb.log(x)
@@ -198,7 +200,7 @@ class Trainer:
                 labels = torch.stack(labels).T
 
                 # step
-                y_pred, labels = self._forward(texts, labels, mask_label)
+                y_pred, labels = self._forward(texts, labels)
                 y_pred = y_pred.reshape(-1, self.n_label)
                 labels = labels.flatten()
 
