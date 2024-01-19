@@ -113,7 +113,7 @@ class Trainer:
         mask_tgt = Trainer._create_tgt_mask(decoder_input)
 
 
-        mask_label = graph[decoder_input] == 0\
+        mask_label = self.graph[decoder_input] == 0\
             if mask_label\
             else None
 
