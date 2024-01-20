@@ -1,6 +1,7 @@
 import argparse
-import torch
 import os
+import torch
+from safetensors.torch import load_file
 from transformers import AutoConfig
 
 from model import Hypformer
@@ -14,9 +15,6 @@ def create_parser() -> argparse.ArgumentParser:
     parser.add_argument("--no_wandb", action="store_true")
     parser.add_argument("--project", type=str, default="hyp")
     parser.add_argument("--name", type=str, default=None)
-
-    parser.add_argument("--device_e", type=str, default="cuda:0")
-    parser.add_argument("--device_d", type=str, default="cuda:1")
 
     parser.add_argument("--encoder_name", type=str, default="bert-base-uncased")
     parser.add_argument("--d_eh", type=int, default=None)
@@ -75,7 +73,7 @@ if __name__ == "__main__":
         args.n_layer,
         n_label,
         max_depth
-    ).to(args.device_d)
+    )
 
     if not os.path.exists(args.ckpt_path):
         os.mkdir(args.ckpt_path)
@@ -83,19 +81,17 @@ if __name__ == "__main__":
     n_ckpt = args.ckpt if args.ckpt is not None else 0
     def save_path(x: int) -> str:
         alter_name = "@".join(args.encoder_name.split("/"))
-        save_path = f"{args.ckpt_path}/{args.dataset}-{alter_name}-{args.d_eh}-{args.d_model}-{args.d_k}-{args.d_v}-{args.n_head}-{args.d_ff}-{args.n_layer}-ckpt-{x+n_ckpt}.tar"
+        save_path = f"{args.ckpt_path}/{args.dataset}-{alter_name}-{args.d_eh}-{args.d_model}-{args.d_k}-{args.d_v}-{args.n_head}-{args.d_ff}-{args.n_layer}-ckpt-{x+n_ckpt}"
         return save_path
 
     if args.ckpt is not None:
-        ckpt = torch.load(save_path(0))
-        model.load_state_dict(ckpt["model"], strict=False)
+        ckpt = load_file(save_path(0) + "/model.safetensors")
+        model.load_state_dict(ckpt)
 
     trainer = Trainer(
         model=model,
         encoder_name=args.encoder_name,
-        dataset=dataset,
-        device_e=args.device_e,
-        device_d=args.device_d
+        dataset=dataset
     )
 
     if args.detect_anomaly:

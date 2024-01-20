@@ -1,4 +1,6 @@
 transformers
 datasets
 huggingface-cli
+safetensors
+accelerator
 wandb
