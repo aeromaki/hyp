@@ -29,7 +29,7 @@ def create_parser() -> argparse.ArgumentParser:
     parser.add_argument("--dataset", type=str, default="PRIV_01")
     parser.add_argument("--mask_label", action="store_true")
     parser.add_argument("--use_weight", action="store_true")
-    parser.add_argument("--lr", type=float, default=1e-05)
+    parser.add_argument("--lr", type=float, default=5e-05)
     parser.add_argument("--batch_size", type=int, default=128)
 
     parser.add_argument("--n_bb", type=int, default=1)
