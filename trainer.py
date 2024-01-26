@@ -59,7 +59,7 @@ class Trainer:
 
         decoder_input = labels[...,:-1]
         decoder_label = labels[...,1:]
-        mask_tgt = Trainer._create_tgt_mask(decoder_input)
+        mask_tgt = self._create_tgt_mask(decoder_input)
         mask_label = self.graph[decoder_input] == 0 if self.mask_label else None
 
         with torch.no_grad():
@@ -137,8 +137,6 @@ class Trainer:
                 loss = criterion(y_pred, labels)
                 loss = loss * weight[labels]
                 loss = loss.mean()
-
-                log({"loss": loss.item()})
 
                 self.accelerator.backward(loss)
 
